@@ -1,16 +1,11 @@
-
 from __future__ import print_function
 import tensorflow as tf
-
 import argparse
 import time
 import os
 from six.moves import cPickle
-
 from utils import TextLoader
 from model import Model
-
-
 def main():
     parser = argparse.ArgumentParser(
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -54,12 +49,9 @@ def main():
                         """)
     args = parser.parse_args()
     train(args)
-
-
 def train(args):
     data_loader = TextLoader(args.data_dir, args.batch_size, args.seq_length)
     args.vocab_size = data_loader.vocab_size
-
     # check compatibility if training is continued from previously saved model
     if args.init_from is not None:
         # check if all necessary files exist
@@ -69,20 +61,17 @@ def train(args):
         ckpt = tf.train.get_checkpoint_state(args.init_from)
         assert ckpt, "No checkpoint found"
         assert ckpt.model_checkpoint_path, "No model path found in checkpoint"
-
         # open old config and check if models are compatible
         with open(os.path.join(args.init_from, 'config.pkl'), 'rb') as f:
             saved_model_args = cPickle.load(f)
         need_be_same = ["model", "rnn_size", "num_layers", "seq_length"]
         for checkme in need_be_same:
             assert vars(saved_model_args)[checkme]==vars(args)[checkme],"Command line argument and saved model disagree on '%s' "%checkme
-
         # open saved vocab/dict and check if vocabs/dicts are compatible
         with open(os.path.join(args.init_from, 'chars_vocab.pkl'), 'rb') as f:
             saved_chars, saved_vocab = cPickle.load(f)
         assert saved_chars==data_loader.chars, "Data and loaded model disagree on character set!"
         assert saved_vocab==data_loader.vocab, "Data and loaded model disagree on dictionary mappings!"
-
     if not os.path.isdir(args.save_dir):
         os.makedirs(args.save_dir)
     with open(os.path.join(args.save_dir, 'config.pkl'), 'wb') as f:
@@ -119,15 +108,11 @@ def train(args):
                     feed[c] = state[i].c
                     feed[h] = state[i].h
                 train_loss, state, _ = sess.run([model.cost, model.final_state, model.train_op], feed)
-
                 # instrument for tensorboard
                 summ, train_loss, state, _ = sess.run([summaries, model.cost, model.final_state, model.train_op], feed)
                 writer.add_summary(summ, e * data_loader.num_batches + b)
-
                 end = time.time()
-
                 print(args.num_epochs , " - " , data_loader.num_batches)
-
                 print("{}/{} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}"
                       .format(e * data_loader.num_batches + b,
                               args.num_epochs * data_loader.num_batches,
@@ -140,7 +125,5 @@ def train(args):
                     saver.save(sess, checkpoint_path,
                                global_step=e * data_loader.num_batches + b)
                     print("model saved to {}".format(checkpoint_path))
-
-
 if __name__ == '__main__':
     main()

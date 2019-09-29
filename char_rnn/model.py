@@ -1,18 +1,13 @@
-
 import tensorflow as tf
 from tensorflow.contrib import rnn
 from tensorflow.contrib import legacy_seq2seq
-
 import numpy as np
-
-
 class Model():
     def __init__(self, args, training=True):
         self.args = args
         if not training:
             args.batch_size = 1
             args.seq_length = 1
-
         if args.model == 'rnn':
             cell_fn = rnn.BasicRNNCell
         elif args.model == 'gru':
@@ -23,7 +18,6 @@ class Model():
             cell_fn = rnn.NASCell
         else:
             raise Exception("model type not supported: {}".format(args.model))
-
         cells = []
         for _ in range(args.num_layers):
             cell = cell_fn(args.rnn_size)
@@ -53,12 +47,7 @@ class Model():
                 softmax_b = tf.get_variable("softmax_b", [args.vocab_size])
                 embedding = tf.get_variable("embedding", [args.vocab_size, args.rnn_size])
 
-
         inputs = tf.nn.embedding_lookup(embedding, self.input_data)
-
-
-
-
         # dropout beta testing: double check which one should affect next line
         if training and args.output_keep_prob:
             inputs = tf.nn.dropout(inputs, args.output_keep_prob)
